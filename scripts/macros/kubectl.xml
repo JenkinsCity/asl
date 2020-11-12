@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="asl-taskdefs-kubectl">
+  <description>
+    This file provide some common taskdefs.
+  </description>
+
+  <macrodef name="kubectl">
+    <attribute name="command" />
+    <attribute name="options" />
+    <attribute name="namespace" />
+    <sequential>
+      <echo message="kubect @{command} @{options} -n @{namespace}" />
+      <exec executable="kubectl" failonerror="true">
+        <arg value="@{command}" />
+        <arg line="@{options}" />
+        <arg line="-n @{namespace}" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="kubectl-set-image">
+    <attribute name="resource" />
+    <attribute name="container" />
+    <attribute name="namespace" />
+    <sequential>
+      <kubectl command="set" namespace="@{namespace}"
+        options="image @{resource} @{container}" />
+    </sequential>
+  </macrodef>
+
+</project>

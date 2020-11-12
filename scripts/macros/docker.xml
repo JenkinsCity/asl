@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="asl-taskdefs-docker">
+  <description>
+    This file provide some common taskdefs.
+  </description>
+  
+  <macrodef name="dockerLogin">
+    <attribute name="hubUrl" />
+    <attribute name="hubUser" />
+    <attribute name="hubPass" />
+    <sequential>
+      <printLog message="docker login @{hubUrl}...." />
+      <exec executable="docker" failonerror="true">
+        <arg value="login" />
+        <arg line="--username @{hubUser}" />
+        <arg line="--password @{hubPass}" />
+        <arg value="@{hubUrl}" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="dockerLogout">
+    <attribute name="hubUrl" />
+    <sequential>
+      <printLog message="docker logout @{hubUrl}...." />
+      <exec executable="docker" failonerror="true">
+        <arg line="logout @{hubUrl}" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="dockerBuild">
+    <attribute name="image" />
+    <attribute name="options" default="." />
+    <sequential>
+      <printLog message="docker build image:@{image} @{options} ...." />
+      <exec executable="docker" failonerror="true">
+        <arg value="build" />
+        <arg line="-t @{image}" />
+        <arg line="@{options}" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="dockerTag">
+    <attribute name="image" />
+    <attribute name="destImage" />
+    <sequential>
+      <printLog message="docker tag @{image}->@{destImage}" />
+      <exec executable="docker" failonerror="true">
+        <arg value="tag" />
+        <arg line="@{image}" />
+        <arg line="@{destImage}" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="dockerPush">
+    <attribute name="image" />
+    <sequential>
+      <printLog message="docker push @{image}" />
+      <exec executable="docker" failonerror="true">
+        <arg value="push" />
+        <arg line="@{image}" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="dockerPull">
+    <attribute name="image" />
+    <sequential>
+      <printLog message="docker pull @{image}" />
+      <exec executable="docker" failonerror="true">
+        <arg value="pull" />
+        <arg line="@{image}" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="dockerTop">
+    <attribute name="containerId" />
+    <attribute name="failonerror" default="false" />
+    <sequential>
+      <printLog message="docker top...." />
+      <var name="run.err" unset="true" />
+      <var name="run.retcode" unset="true" />
+      <exec executable="docker" resultproperty="run.retcode" errorproperty="run.err" failonerror="false">
+        <arg line="top ${container.id} -eo pid,comm" />
+      </exec>
+      <checkExitCode code="${run.retcode}" errmsg="${run.err}" failonerror="@{failonerror}" />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="dockerExec">
+    <attribute name="containerId" />
+    <attribute name="command" />
+    <attribute name="failonerror" default="false" />
+    <sequential>
+      <printLog message="docker exec command...." />
+      <var name="run.err" unset="true" />
+      <var name="run.retcode" unset="true" />
+      <exec executable="docker" resultproperty="run.retcode" errorproperty="run.err" failonerror="false">
+        <arg line="exec -t ${container.id} @{command}" />
+      </exec>
+      <checkExitCode code="${run.retcode}" errmsg="${run.err}" failonerror="@{failonerror}" />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="dockerStop">
+    <attribute name="containerId" />
+    <attribute name="failonerror" default="false" />
+    <sequential>
+      <printLog message="docker stop...." />
+      <var name="run.err" unset="true" />
+      <var name="run.retcode" unset="true" />
+      <exec executable="docker" resultproperty="run.retcode" errorproperty="run.err" failonerror="false">
+        <arg line="stop --time=1 ${container.id}" />
+      </exec>
+      <checkExitCode code="${run.retcode}" errmsg="${run.err}" failonerror="${failonerror}" />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="dockerRm">
+    <attribute name="containerId" />
+    <attribute name="failonerror" default="false" />
+    <sequential>
+      <printLog message="docker rm...." />
+      <var name="run.err" unset="true" />
+      <var name="run.retcode" unset="true" />
+      <exec executable="docker" resultproperty="run.retcode" errorproperty="run.err" failonerror="false">
+        <arg line="rm -f ${container.id}" />
+      </exec>
+      <checkExitCode code="${run.retcode}" errmsg="${run.err}" failonerror="@{failonerror}" />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="dockerRun">
+    <attribute name="image" />
+    <attribute name="options" default="" />
+    <attribute name="workdir" default="${ws.dir}"/>
+    <attribute name="command" default="echo 'hello, world'"/>
+    <sequential>
+      <printLog message="run container..., in ${ws.dir}:@{workdir} ..." />
+
+      <var name="##options##" value="-e ABS_RUN_IN_DOCKER=true @{options}" />
+      <trycatch>
+        <try>
+          <var name="container.id" unset="true"/>
+          <var name="run.retcode" unset="true"/>
+          <var name="run.err" unset="true"/>
+
+          <if>
+            <not>
+              <equals arg1="@{workdir}" arg2="${ws.dir}" trim="true" />
+            </not>
+            <then>
+              <var name="##options##" value="-v ${ws.dir}:${ws.dir} ${##options##}" />
+            </then>
+          </if>
+
+          <if>
+            <not>
+              <istrue value="${debug}" />
+            </not>
+            <then>
+              <dockerPull image="@{image}" />
+            </then>
+          </if>
+
+          <exec executable="docker" failonerror="false"
+            outputproperty="container.id" resultproperty="run.retcode" errorproperty="run.err">
+            <arg line="run -t -d -w @{workdir}" />
+            <arg line="-v ${ws.dir}:@{workdir}:rw,z ${##options##} -e WORKSPACE=@{workdir}" />
+            <arg line="@{image} cat" />
+          </exec>
+          <printLog message="ContainerId: ${container.id}"  />
+          <checkExitCode code="${run.retcode}" errmsg="${run.err}" />
+
+          <var name="##container.id##" value="${container.id}" />
+          <sleep seconds="5"/>
+          <dockerTop containerId="${##container.id##}" />
+          <dockerExec containerId="${##container.id##}" command="@{command}" failonerror="true"/>
+        </try>
+        <catch>
+          <printLog message="docker run error!" type="err" />
+        </catch>
+        <finally>
+          <if>
+            <not>
+              <istrue value="${debug}" />
+            </not>
+            <then>
+              <dockerStop containerId="${##container.id##}" />
+              <dockerRm containerId="${##container.id##}" />
+            </then>
+          </if>
+        </finally>
+      </trycatch>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="runInDocker">
+    <attribute name="command" default=""/>
+    <attribute name="options" default="" />
+    <sequential>
+      <if>
+        <isset property="abs.run.img" />
+        <then>
+          <if>
+            <not>
+              <istrue value="${env.ABS_RUN_IN_DOCKER}" />
+            </not>
+            <then>
+              <printLog message="start run task in dind..."  />
+              <var name="##abs.run.options##" value="@{options}" />
+              <if>
+                <isset property="abs.run.options" />
+                <then>
+                  <var name="##abs.run.options##" value="${##abs.run.options##} ${abs.run.options}" />
+                </then>
+              </if>
+
+              <var name="##abs.run.workdir##" value="${ws.dir}" />
+              <if>
+                <isset property="abs.run.workdir" />
+                <then>
+                  <var name="##abs.run.workdir##" value="${abs.run.workdir}" />
+                </then>
+              </if>
+
+              <var name="##run.command##" value="@{command}" />
+
+              <if>
+                <equals arg1="@{command}" arg2="" trim="true" />
+                <then>
+                  <var name="##asl.root##" value="${##abs.run.workdir##}/.asl/asl" />
+                  <var name="##run.command##" value="${##asl.root##}/tools/ant/bin/ant -f ${##abs.run.workdir##}/.asl/asl/run.xml" />
+                  <var name="##run.command##" value="${##run.command##} -Dabs.run.id=${abs.run.id} -Dabs.task.id=${task.name}" />
+                  <var name="##run.command##" value="${##run.command##} -logger org.apache.tools.ant.NoBannerLogger" />
+                </then>
+              </if>
+
+              <var name="##abs.run.img.registry##" value="" />
+              <if>
+                <isset property="env.ABSIMG_REGISTRY_URL" />
+                <then>
+                  <var name="##abs.run.img.registry##" value="${env.ABSIMG_REGISTRY_URL}" />
+                </then>
+              </if>
+
+              <trycatch>
+                <try>
+                  <if>
+                    <and>
+                      <isset property="env.ABSIMG_REGISTRY_URL" />
+                      <isset property="env.ABSIMG_REGISTRY_USR" />
+                      <isset property="env.ABSIMG_REGISTRY_PSW" />
+                    </and>
+                    <then>
+                      <dockerLogin hubUrl="${env.ABSIMG_REGISTRY_URL}" hubUser="${env.ABSIMG_REGISTRY_USR}" hubPass="${env.ABSIMG_REGISTRY_PSW}" />
+                    </then>
+                  </if>
+                  <dockerRun image="${##abs.run.img.registry##}/${abs.run.img}" options="${##abs.run.options##}" 
+                    workdir="${##abs.run.workdir##}" command="${##run.command##}"/>
+                </try>
+                <catch>
+                  <printLog message="task run error in dind." type="err" />
+                </catch>
+                <finally>
+                  <if>
+                    <isset property="env.ABSIMG_REGISTRY_URL" />
+                    <then>
+                      <dockerLogout hubUrl="${env.ABSIMG_REGISTRY_URL}" />
+                    </then>
+                  </if>
+                </finally>
+              </trycatch>
+            </then>
+          </if>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+
+</project>

@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project name="asl-properties">
+    <description>
+        This file provides some base properties.
+        All other properties depend on the properties.
+    </description>
+
+    <condition property="os.unix">
+        <os family="unix" />
+    </condition>
+
+    <condition property="os.windows">
+        <or>
+            <os family="winnt" />
+            <os family="win9x" />
+        </or>
+    </condition>
+
+    <dirname property="asl.basedir" file="${ant.file.asl-properties}" />
+    <import file="${asl.basedir}/asl-tasks-settings.xml" />
+
+    <property environment="env" />
+    <!-- asl(my) dir -->
+    <property name="ci.asl.root" location="${asl.basedir}/.." />
+    <property name="ci.asl.scripts.root" location="${asl.basedir}" />
+    <!-- JenkinsCity(ABS tasks root dir, ex: /path/to/asl|hello|world)-->
+    <property name="ci.asl.tasks.root" location="${ci.asl.root}/../" />
+    <property name="ci.asl.lib.root" location="${ci.asl.root}/lib" />
+
+    <!-- load asl 内置变量 -->
+    <property file="${ci.asl.scripts.root}/asl.properties" />
+
+    <!--注意：在使用asl(ant script library)工具时，需要设置JENKINS_HOME环境变量 -->
+    <property name="ci.root" location="${env.JENKINS_HOME}" />
+    <property name="ci.userData.root" location="${ci.root}/userData" />
+
+    <!-- tool path : $JENKINS_HOME/tool -->
+    <property name="ci.slave.root" location="${ci.root}" />
+    <property name="ci.tool.root" location="${ci.slave.root}/tool" />
+
+    <!-- please set ant/jdk/groovy/gradle/maven environment variables. -->
+    <property name="ant.root" location="${ci.asl.root}/tools/ant" />
+    <property name="ant.lib.root" location="${ant.root}/lib" />
+
+    <!-- all task default properties -->
+    <property name="ws.dir" location="${basedir}" />
+    <property name="dot.asl.dir" location="${ws.dir}/.asl" />
+    <property name="dot.ci.dir" location="${ws.dir}/.ci" />
+    <property name="reports" value=".reports" />
+
+    <target name="asl.properties.unix" if="os.unix">
+        <!-- unix properties -->
+        <property name="ci.unix.tool.root" location="${ci.tool.root}/unix" />
+    </target>
+
+    <target name="asl.properties.windows" if="os.windows">
+        <!-- windows properties -->
+        <property name="ci.windows.tool.root" location="${ci.tool.root}/windows" />
+    </target>
+
+    <target name="asl.properties" depends="asl.properties.unix,asl.properties.windows" />
+</project>

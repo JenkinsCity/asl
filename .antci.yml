@@ -1,0 +1,12 @@
+
+package:
+  steps:
+    - semver
+    - opspkg:
+        artifact.id: asl
+        fileset.includes: >-
+          run.xml,
+          lib/**/*,
+          scripts/**/*,
+          tools/**/*,
+          VERSION

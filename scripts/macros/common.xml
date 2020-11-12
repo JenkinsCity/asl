@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="asl-taskdefs-common">
+  <description>
+    This file provide some common taskdefs.
+  </description>
+
+  <macrodef name="getVersionFromFile">
+    <attribute name="versionFile" default="VERSION"/>
+    <attribute name="versionProperty" default="VERSION" />
+    <sequential>
+      <var name="@{versionProperty}" unset="true" />
+      <var name="version.file.absolute.path" unset="true" />
+      <property name="version.file.absolute.path" location="@{versionFile}" />
+      <groovy>
+        <arg value="${version.file.absolute.path}" />
+        <arg value="@{versionProperty}" />
+        <![CDATA[
+          def versionFile = args[0]?:"VERSION"
+          def versionProperty = args[1]?:"VERSION"
+          def version = new File(versionFile).readLines().get(0)
+          properties[versionProperty] = version
+        ]]>
+      </groovy>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="getFilenameInfo">
+    <attribute name="targetFile" />
+    <attribute name="fileNameProperty" default="target.file.name" />
+    <attribute name="fileExtProperty" default="target.file.ext" />
+    <sequential>
+      <var name="@{fileNameProperty}" unset="true" />
+      <var name="@{fileExtProperty}" unset="true" />
+      <var name="##target.file.basename##" unset="true"/>
+
+      <basename property="##target.file.basename##" file="@{targetFile}"/>
+      <propertyregex property="@{fileNameProperty}"
+        input="${##target.file.basename##}" regexp="(.*)\.[a-z]+$" select="\1" />
+      <propertyregex property="@{fileExtProperty}"
+        input="${##target.file.basename##}" regexp=".*\.([a-z]+)$" select="\1" />
+
+    </sequential>
+  </macrodef>
+
+  <macrodef name="ci">
+    <attribute name="task" />
+    <element name="properties" optional="true" />
+    <sequential>
+      <if>
+        <not>
+          <isset property="asl.tasks.root" />
+        </not>
+        <then>
+          <var name="asl.tasks.root" value="${ci.asl.tasks.root}" />
+        </then>
+      </if>
+      <ant antfile="${asl.tasks.root}/@{task}/run.xml" inheritRefs="true">
+        <properties />
+      </ant>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="stage">
+    <attribute name="name" />
+    <element name="tasks" />
+    <sequential>
+      <printLog message="--//------------start @@stage@@: @{name}--------------------------" />
+      <tasks />
+      <printLog message="--//--------------end @@stage@@: @{name}---------------------------" />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="printLog">
+    <attribute name="message" default="" />
+    <attribute name="type" default="info" /> <!-- type: info/warn/err -->
+    <sequential>
+
+      <if>
+        <not>
+          <isset property="asl.log.level" />
+        </not>
+        <then>
+          <property name="abs.log.level" value="info" />
+        </then>
+      </if>
+
+      <if>
+        <equals arg1="@{type}" arg2="debug" casesensitive="false"/>
+        <then>
+          <if>
+            <equals arg1="${abs.log.level}" arg2="debug" casesensitive="false"/>
+            <then>
+              <echo><![CDATA[--//DEBUG: @{message}]]></echo>
+            </then>
+          </if>
+        </then>
+        <elseif>
+          <equals arg1="@{type}" arg2="info" casesensitive="false"/>
+          <then>
+            <if>
+              <or>
+                <equals arg1="${abs.log.level}" arg2="info" casesensitive="false"/>
+                <equals arg1="${abs.log.level}" arg2="debug" casesensitive="false"/>
+              </or>
+              <then>
+                <echo><![CDATA[--//INFO: @{message}]]></echo>
+              </then>
+            </if>
+          </then>
+        </elseif>
+        <elseif>
+          <equals arg1="@{type}" arg2="warn" casesensitive="false"/>
+          <then>
+            <echo><![CDATA[--//WARN: @{message}]]></echo>
+          </then>
+        </elseif>
+        <else>
+          <fail message="--//ERR: @{message}" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="over">
+    <attribute name="message" default="" />
+    <sequential>
+      <printLog message="@{message}" />
+      <script language="groovy">
+        <![CDATA[
+        println("Run Over!")
+        System.exit(0)
+        ]]>
+      </script>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="showLogFile">
+    <attribute name="path" />
+    <sequential>
+      <var name="textFile" unset="true" />
+      <loadfile property="textFile" srcfile="@{path}"/>
+      <for param="line" list="${textFile}" delimiter="${line.separator}">
+        <sequential>
+          <echo message="@{line}"/>
+        </sequential>
+      </for>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="checkExitCode">
+    <attribute name="code" default="0"/>
+    <attribute name="errmsg" default="" />
+    <attribute name="failonerror" default="false" />
+    <sequential>
+      <if>
+        <not>
+          <equals arg1="@{code}" arg2="0" trim="true" />
+        </not>
+        <then>
+          <if>
+            <istrue value="@{failonerror}" />
+            <then>
+              <printLog message="@{errmsg}" type="err"/>
+            </then>
+            <else>
+              <printLog message="@{errmsg}" type="warn" />
+            </else>
+          </if>
+        </then>
+      </if>
+    </sequential>
+  </macrodef>
+  
+</project>

@@ -1,0 +1,9 @@
+.opspkg
+.artifacts
+.reports
+*.tar.gz
+
+.asl
+.ci
+.debug.xml
+.env

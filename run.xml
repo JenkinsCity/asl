@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="run-asl" basedir="../.." default="asl-task">
+  <property environment="env"/>
+
+  <!-- load asl-config.xml 
+       basedir=ws.dir
+       $tools/asl/tools/ant/bin/ant -f run.xml  -p -Dabs.run.id=xxx -Dabs.task.id=xxx
+    -->
+  <dirname property="asl.root" file="${ant.file.run-asl}" />
+  <import file="${asl.root}/scripts/asl-config.xml" />
+  <target name="clean">
+    <delete dir="${dot.ci.dir}" />
+    <delete dir="${dot.asl.dir}" />
+    <delete dir=".opspkg" />
+  </target>
+
+  <target name="asl-task" depends="setup.asl">
+
+    <if>
+      <isset property="abs.task.id" />
+      <then>
+        <if>
+          <isset property="abs.run.id" />
+          <then>
+            <var name="abs.log.level" unset="true" />
+            <property file="${dot.ci.dir}/${abs.run.id}.properties" />
+          </then>
+        </if>
+        <printLog message="basedir: ${basedir}" type="debug"/>
+        <ci task="${abs.task.id}" />
+      </then>
+      <else>
+        <printLog message="undefined props(abs.task.id)" type="err" />
+      </else>
+    </if>
+  </target>
+
+</project>

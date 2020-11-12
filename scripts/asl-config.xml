@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="asl-config">
+    <description>
+        This is the entry config file that user should import.
+    </description>
+
+    <dirname property="asl.basedir" file="${ant.file.asl-config}" />
+    <import file="${asl.basedir}/asl-taskdefs.xml" />
+
+    <import file="${asl.basedir}/macros/common.xml" />
+    <import file="${asl.basedir}/macros/svn.xml" />
+    <import file="${asl.basedir}/macros/git.xml" />
+    <import file="${asl.basedir}/macros/docker.xml" />
+    <import file="${asl.basedir}/macros/kubectl.xml" />
+
+    <target name="asl.update.config" depends="asl.taskdefs">
+      <!-- 更新全局配置到应用目录.asl/asl-settings.properties|asl-settings.xsl两种格式 -->
+      <mkdir dir="${dot.asl.dir}" />
+      <!-- update asl-settings.properties -->
+      <if>
+        <not>
+          <available file="${dot.asl.dir}/asl-settings.properties" />
+        </not>
+        <then>
+          <java jar="${ci.saxon.jar}"
+            fork="true"
+            output="${dot.asl.dir}/asl-settings.properties"
+            errorproperty="ci.error.xslt.config">
+            <arg file="${asl.basedir}/asl-tasks-settings.xml" />
+            <arg file="${asl.basedir}/asl-update-properties-config.xsl" />
+          </java>
+        </then>
+      </if>
+
+      <!-- update asl-settings.xsl -->
+      <if>
+        <not>
+          <available file="${dot.asl.dir}/asl-settings.xsl" />
+        </not>
+        <then>
+          <java jar="${ci.saxon.jar}"
+            fork="true"
+            output="${dot.asl.dir}/asl-settings.xsl"
+            errorproperty="ci.error.xslt.config">
+            <arg file="${asl.basedir}/asl-tasks-settings.xml" />
+            <arg file="${asl.basedir}/asl-update-xsl-config.xsl" />
+          </java>
+        </then>
+      </if>
+    </target>
+
+    <target name="setup.asl" depends="asl.update.config" />
+</project>

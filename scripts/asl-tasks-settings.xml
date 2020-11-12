@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="asl-tasks-settings">
+    <description>
+        This file provides some threshold settings of CI tools.
+    </description>
+
+    <!-- xxx task threshold settings. 
+        format: ${taskName}.${thresholdId}
+    -->
+    
+    <!--property name="hello.warning.count" value="20" /-->
+
+</project>

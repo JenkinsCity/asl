@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="asl-taskdefs-svn">
+  <description>
+    **NOTE**: linux install subversion http://pkgs.repoforge.org/subversion/
+  </description>
+
+  <macrodef name="getSvnInfo">
+    <attribute name="targetFile" />
+    <attribute name="svnRevisionProperty" default="svn.revision" />
+    <attribute name="svnUrlProperty" default="svn.url" />
+    <sequential>
+      <var name="@{svnUrlProperty}" unset="true" />
+      <var name="@{svnRevisionProperty}" unset="true" />
+      <var name="svn.info.log" unset="true" />
+
+      <exec executable="svn" outputproperty="svn.info.log" failonerror="true">
+        <arg value="info" />
+        <arg value="@{targetFile}" />
+      </exec>
+
+      <groovy>
+        <arg value="${svn.info.log}" />
+        <arg value="@{svnRevisionProperty}" />
+        <arg value="@{svnUrlProperty}" />
+
+        <![CDATA[
+
+        def svnInfoOutLog = args[0]
+        def svnRevisionProperty = args[1]
+        def svnUrlProperty = args[2]
+
+        // analyze svn info command out...
+        def outLogLines = svnInfoOutLog.split('\n')
+        def svnRevision = -1
+        def svnUrl = ''
+
+        outLogLines.each { line ->
+
+          def revisionMatcher = line =~ "^Last Changed Rev: (\\d+)"
+          def urlMatcher = line =~ "^URL: (.*)"
+
+          if (revisionMatcher.find()) {
+            svnRevision = revisionMatcher.group(1)
+          }
+
+          if (urlMatcher.find()) {
+            svnUrl = urlMatcher.group(1)
+          }
+        }
+
+        if (svnRevision != -1) {
+          properties[svnRevisionProperty] = svnRevision
+        } else {
+          System.exit(-1)
+        }
+
+        if (svnUrl != '') {
+          properties[svnUrlProperty] = svnUrl
+        } else {
+          System.exit(-1)
+        }
+        ]]>
+      </groovy>
+    </sequential>
+  </macrodef>
+
+  <!-- 导入文件或者目录到SVN里面 -->
+  <macrodef name="svnImport">
+    <attribute name="workingDir" default="${ws.dir}"/>
+    <attribute name="targetFile" />
+    <attribute name="targetSvnUrl" />
+    <attribute name="svnCommitLog" />
+    <sequential>
+      <if>
+        <not>
+          <available file="@{workingDir}/@{targetFile}" />
+        </not>
+        <then>
+          <fail message="-- // error: @{workingDir}/@{targetFile} is not exist." />
+        </then>
+      </if>
+
+      <exec executable="svn" dir="@{workingDir}">
+        <arg value="import" />
+        <arg line="-m &quot;@{svnCommitLog}&quot;" />
+        <arg value="@{targetFile}" />
+        <arg value="@{targetSvnUrl}/@{targetFile}" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <!-- 创建分支或者Tag -->
+  <macrodef name="svnCopy">
+    <attribute name="svnCommitLog" />
+    <attribute name="svnOriginUrl" />
+    <attribute name="svnTargetUrl" />
+    <sequential>
+      <echo message="svn-copy commit log: @{svnCommitLog}" />
+      <echo message="svn origin url: @{svnOriginUrl}" />
+      <echo message="svn target url: @{svnTargetUrl}" />
+      <exec executable="svn">
+        <arg value="copy" />
+        <arg value="@{svnOriginUrl}" />
+        <arg value="@{svnTargetUrl}" />
+        <arg line="-m &quot;@{svnCommitLog}&quot;" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <!-- 修改分支或者Tag名称 -->
+  <macrodef name="svnMove">
+    <attribute name="svnCommitLog" />
+    <attribute name="svnOriginUrl" />
+    <attribute name="svnTargetUrl" />
+    <sequential>
+      <echo message="svn-move commit log: @{svnCommitLog}" />
+      <echo message="svn origin url: @{svnOriginUrl}" />
+      <echo message="svn target url: @{svnTargetUrl}" />
+      <exec executable="svn" failonerror="true">
+        <arg value="move" />
+        <arg value="@{svnOriginUrl}" />
+        <arg value="@{svnTargetUrl}" />
+        <arg line="-m &quot;@{svnCommitLog}&quot;" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="svnDelete">
+    <attribute name="svnCommitLog" />
+    <attribute name="svnTargetUrl" />
+    <attribute name="failonerror" default="true" />
+    <sequential>
+      <echo message="svn-delete commit log: @{svnCommitLog}" />
+      <echo message="svn target url: @{svnTargetUrl}" />
+      <exec executable="svn" failonerror="@{failonerror}">
+        <arg value="delete" />
+        <arg value="@{svnTargetUrl}" />
+        <arg line="-m &quot;@{svnCommitLog}&quot;" />
+      </exec>
+    </sequential>
+  </macrodef>
+
+</project>

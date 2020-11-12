@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="asl-taskdefs">
+    <description>
+        This file provide some common taskdefs.
+    </description>
+
+    <dirname property="asl.basedir" file="${ant.file.asl-taskdefs}" />
+    <import file="${asl.basedir}/asl-properties.xml" />
+ 
+    <!-- ant-contrib taskdefs.
+      -->
+    <property name="ant-contrib.jar" location="${ant.lib.root}/ant-contrib-${ant-contrib.version}.jar" />
+    <taskdef resource="net/sf/antcontrib/antlib.xml">
+        <classpath>
+          <fileset dir="${ant.lib.root}" includes="**/*.jar" />
+        </classpath>
+    </taskdef>
+
+    <!-- task: saxon-xslt
+         saxon taskdefs. 
+      -->
+    <property name="saxon.root" location="${ci.asl.lib.root}/saxon" />
+    <property name="ci.saxon.jar" location="${ci.asl.lib.root}/makexsl/saxon8.jar" />
+    <path id="ci.saxon.ant.jars">
+        <fileset dir="${saxon.root}" includes="**/*.jar" />
+    </path>
+    <taskdef name="saxon-xslt" classname="net.sf.saxon.ant.AntTransform" classpathref="ci.saxon.ant.jars" />
+
+    <!-- task: xmltask
+         参考：
+           1. http://oopsconsultancy.com/software/xmltask/index.html
+      -->
+    <taskdef name="xmltask" classname="com.oopsconsultancy.xmltask.ant.XmlTask">
+        <classpath path="${ant.lib.root}/xmltask.jar" />
+    </taskdef>
+
+    <!-- task: groovy
+         参考： 
+           1. http://ant.apache.org/manual/Tasks/script.html
+           2. http://groovy-lang.org/scripting-ant.html
+      -->
+    <property name="groovy.jar" location="${ant.lib.root}/groovy-all-${groovy.version}.jar" />
+    <taskdef name="groovy" classname="org.codehaus.groovy.ant.Groovy">
+        <classpath>
+          <fileset dir="${ant.lib.root}" includes="**/*.jar" />
+        </classpath>
+    </taskdef>
+
+    <macrodef name="groovy-cli">
+      <element name="args" />
+      <sequential>
+        <java jar="${groovy.jar}" fork="true" failonerror="true">
+          <args />
+        </java>
+      </sequential>
+    </macrodef>
+
+    <target name="asl.taskdefs.unix" depends="asl.properties.unix" if="os.unix">
+        <!-- unix tasks defines -->
+    </target>
+
+    <target name="asl.taskdefs.windows" depends="asl.properties.windows" if="os.windows">
+        <!-- windows tasks defines -->
+    </target>
+
+    <!-- main -->
+    <target name="asl.taskdefs" depends="asl.taskdefs.unix,asl.taskdefs.windows" />
+</project>
